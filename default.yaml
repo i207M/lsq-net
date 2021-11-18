@@ -1,35 +1,48 @@
+#===============================================================================
+#                      Default Configuration for LSQ-Net
+#===============================================================================
+# Please do NOT modify this file directly. If you want to modify configurations,
+# please:
+# 1. Create a new YAML file and copy some bellowing options to it.
+# 2. Modify these options in your YAML file.
+# 3. run main.py with your configuration file in the command line, like this:
+#       $ python main.py path/to/your/config/file
+# The options modified in your configuration file will overwrite those in this
+# file.
+#============================ Environment ======================================
+
 # Experiment name
-name: Alpha
+name: MyProject
 
 # Name of output directory. Checkpoints and logs will be saved at `pwd`/output_dir
-output_dir: runs
+output_dir: out
 
 # Device to be used
 device:
   # Use CPU or GPU (choices: cpu, cuda)
   type: cuda
   # GPU device IDs to be used. Only valid when device.type is 'cuda'
-  gpu: [0]
+  gpu: [0, 1]
 
 # Dataset loader
 dataloader:
   # Dataset to train/validate (choices: imagenet, cifar10)
-  dataset: cifar10
+  dataset: imagenet
   # Number of categories in the specified dataset (choices: 1000, 10)
-  num_classes: 10
+  num_classes: 1000
   # Path to dataset directory
-  path: /data/yaojc/cifar10
+  path: /localhome/fair/Dataset/imagenet
   # Size of mini-batch
-  batch_size: 128
+  batch_size: 64
   # Number of data loading workers
-  workers: 8
+  workers: 32
   # Seeds random generators in a deterministic way (i.e., set all the seeds 0).
   # Please keep it true when resuming the experiment from a checkpoint
   deterministic: true
   # Load the model without DataParallel wrapping it
   serialized: false
   # Portion of training dataset to set aside for validation (range: [0, 1))
-  val_split: 0
+  val_split: 0.05
 
 resume:
   # Path to a checkpoint to be loaded. Leave blank to skip
@@ -51,7 +64,7 @@ log:
 #     resnet18, resnet34, resnet50, resnet101, resnet152
 #   CIFAR10:
 #     resnet20, resnet32, resnet44, resnet56, resnet110, resnet1202
-arch: resnet56
+arch: resnet18
 
 # Use pre-trained model
 pre_trained: true
@@ -63,7 +76,7 @@ quan:
     # Quantizer type (choices: lsq)
     mode: lsq
     # Bit width of quantized activation
-    bit: 2
+    bit: 3
     # Each output channel uses its own scaling factor
     per_channel: false
     # Whether to use symmetric quantization
@@ -74,7 +87,7 @@ quan:
     # Quantizer type (choices: lsq)
     mode: lsq
     # Bit width of quantized weight
-    bit: 2
+    bit: 3
     # Each output channel uses its own scaling factor
     per_channel: true
     # Whether to use symmetric quantization
@@ -82,6 +95,17 @@ quan:
     # Whether to quantize all the numbers to non-negative
     all_positive: false
   excepts:
+    # Specify quantized bit width for some layers, like this:
+    conv1:
+      act:
+        all_positive: false
+      weight:
+        bit:
+    fc:
+      act:
+        bit:
+      weight:
+        bit:
 
 #============================ Training / Evaluation ============================
 
@@ -89,7 +113,7 @@ quan:
 # If this field is true, all the bellowing options will be ignored
 eval: false
 
-epochs: 120
+epochs: 90
 
 optimizer:
   learning_rate: 0.01
@@ -104,7 +128,7 @@ lr_scheduler:
   # Uncomment one of bellowing options to activate a learning rate scheduling
 
   # Fixed learning rate
-  # mode: fixed
+  mode: fixed
 
   # Step decay
   # mode: step
@@ -112,9 +136,9 @@ lr_scheduler:
   # gamma: 0.1
 
   # Multi-step decay
-  mode: multi_step
-  milestones: [30, 60, 90]
-  gamma: 0.1
+  # mode: multi_step
+  # milestones: [30, ]
+  # gamma: 0.1
 
   # Exponential decay
   # mode: exp
