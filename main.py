@@ -33,8 +33,7 @@ def main():
         available_gpu = t.cuda.device_count()
         for dev_id in args.device.gpu:
             if dev_id >= available_gpu:
-                logger.error('GPU device ID {0} requested, but only {1} devices available'
-                             .format(dev_id, available_gpu))
+                logger.error('GPU device ID {0} requested, but only {1} devices available'.format(dev_id, available_gpu))
                 exit(1)
         # Set default device in case the first one on the list
         t.cuda.set_device(args.device.gpu[0])
@@ -45,10 +44,11 @@ def main():
 
     # Initialize data loader
     train_loader, val_loader, test_loader = util.load_data(args.dataloader)
-    logger.info('Dataset `%s` size:' % args.dataloader.dataset +
-                '\n          Training Set = %d (%d)' % (len(train_loader.sampler), len(train_loader)) +
-                '\n        Validation Set = %d (%d)' % (len(val_loader.sampler), len(val_loader)) +
-                '\n              Test Set = %d (%d)' % (len(test_loader.sampler), len(test_loader)))
+    logger.info(
+        'Dataset `%s` size:' % args.dataloader.dataset + '\n          Training Set = %d (%d)' % (len(train_loader.sampler), len(train_loader)) +
+        '\n        Validation Set = %d (%d)' % (len(val_loader.sampler), len(val_loader)) + '\n              Test Set = %d (%d)' %
+        (len(test_loader.sampler), len(test_loader))
+    )
 
     # Create the model
     model = create_model(args)
@@ -65,21 +65,16 @@ def main():
 
     start_epoch = 0
     if args.resume.path:
-        model, start_epoch, _ = util.load_checkpoint(
-            model, args.resume.path, args.device.type, lean=args.resume.lean)
+        model, start_epoch, _ = util.load_checkpoint(model, args.resume.path, args.device.type, lean=args.resume.lean)
 
     # Define loss function (criterion) and optimizer
     criterion = t.nn.CrossEntropyLoss().to(args.device.type)
 
     # optimizer = t.optim.Adam(model.parameters(), lr=args.optimizer.learning_rate)
-    optimizer = t.optim.SGD(model.parameters(),
-                            lr=args.optimizer.learning_rate,
-                            momentum=args.optimizer.momentum,
-                            weight_decay=args.optimizer.weight_decay)
-    lr_scheduler = util.lr_scheduler(optimizer,
-                                     batch_size=train_loader.batch_size,
-                                     num_samples=len(train_loader.sampler),
-                                     **args.lr_scheduler)
+    optimizer = t.optim.SGD(
+        model.parameters(), lr=args.optimizer.learning_rate, momentum=args.optimizer.momentum, weight_decay=args.optimizer.weight_decay
+    )
+    lr_scheduler = util.lr_scheduler(optimizer, batch_size=train_loader.batch_size, num_samples=len(train_loader.sampler), **args.lr_scheduler)
     logger.info(('Optimizer: %s' % optimizer).replace('\n', '\n' + ' ' * 11))
     logger.info('LR scheduler: %s\n' % lr_scheduler)
 
@@ -90,13 +85,11 @@ def main():
     else:  # training
         if args.resume.path or args.pre_trained:
             logger.info('>>>>>>>> Epoch -1 (pre-trained model evaluation)')
-            top1, top5, _ = process.validate(val_loader, model, criterion,
-                                             start_epoch - 1, monitors, args)
+            top1, top5, _ = process.validate(val_loader, model, criterion, start_epoch - 1, monitors, args)
             perf_scoreboard.update(top1, top5, start_epoch - 1)
         for epoch in range(start_epoch, args.epochs):
             logger.info('>>>>>>>> Epoch %3d' % epoch)
-            t_top1, t_top5, t_loss = process.train(train_loader, model, criterion, optimizer,
-                                                   lr_scheduler, epoch, monitors, args)
+            t_top1, t_top5, t_loss = process.train(train_loader, model, criterion, optimizer, lr_scheduler, epoch, monitors, args)
             v_top1, v_top5, v_loss = process.validate(val_loader, model, criterion, epoch, monitors, args)
 
             tbmonitor.writer.add_scalars('Train_vs_Validation/Loss', {'train': t_loss, 'val': v_loss}, epoch)

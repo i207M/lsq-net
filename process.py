@@ -12,7 +12,7 @@ __all__ = ['train', 'validate', 'PerformanceScoreboard']
 logger = logging.getLogger()
 
 
-def accuracy(output, target, topk=(1,)):
+def accuracy(output, target, topk=(1, )):
     """Computes the accuracy over the k top predictions for the specified values of k"""
     with t.no_grad():
         maxk = max(topk)
@@ -24,7 +24,7 @@ def accuracy(output, target, topk=(1,)):
 
         res = []
         for k in topk:
-            correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+            correct_k = correct[:k].contiguous().view(-1).float().sum(0, keepdim=True)
             res.append(correct_k.mul_(100.0 / batch_size))
         return res
 
@@ -66,16 +66,17 @@ def train(train_loader, model, criterion, optimizer, lr_scheduler, epoch, monito
 
         if (batch_idx + 1) % args.log.print_freq == 0:
             for m in monitors:
-                m.update(epoch, batch_idx + 1, steps_per_epoch, 'Training', {
-                    'Loss': losses,
-                    'Top1': top1,
-                    'Top5': top5,
-                    'BatchTime': batch_time,
-                    'LR': optimizer.param_groups[0]['lr']
-                })
+                m.update(
+                    epoch, batch_idx + 1, steps_per_epoch, 'Training', {
+                        'Loss': losses,
+                        'Top1': top1,
+                        'Top5': top5,
+                        'BatchTime': batch_time,
+                        'LR': optimizer.param_groups[0]['lr']
+                    }
+                )
 
-    logger.info('==> Top1: %.3f    Top5: %.3f    Loss: %.3f\n',
-                top1.avg, top5.avg, losses.avg)
+    logger.info('==> Top1: %.3f    Top5: %.3f    Loss: %.3f\n', top1.avg, top5.avg, losses.avg)
     return top1.avg, top5.avg, losses.avg
 
 
@@ -110,12 +111,14 @@ def validate(data_loader, model, criterion, epoch, monitors, args):
 
             if (batch_idx + 1) % args.log.print_freq == 0:
                 for m in monitors:
-                    m.update(epoch, batch_idx + 1, steps_per_epoch, 'Validation', {
-                        'Loss': losses,
-                        'Top1': top1,
-                        'Top5': top5,
-                        'BatchTime': batch_time
-                    })
+                    m.update(
+                        epoch, batch_idx + 1, steps_per_epoch, 'Validation', {
+                            'Loss': losses,
+                            'Top1': top1,
+                            'Top5': top5,
+                            'BatchTime': batch_time
+                        }
+                    )
 
     logger.info('==> Top1: %.3f    Top5: %.3f    Loss: %.3f\n', top1.avg, top5.avg, losses.avg)
     return top1.avg, top5.avg, losses.avg
@@ -132,13 +135,10 @@ class PerformanceScoreboard:
 
         # Keep scoreboard sorted from best to worst, and sort by top1, top5 and epoch
         curr_len = min(self.num_best_scores, len(self.board))
-        self.board = sorted(self.board,
-                            key=operator.itemgetter('top1', 'top5', 'epoch'),
-                            reverse=True)[0:curr_len]
+        self.board = sorted(self.board, key=operator.itemgetter('top1', 'top5', 'epoch'), reverse=True)[0:curr_len]
         for idx in range(curr_len):
             score = self.board[idx]
-            logger.info('Scoreboard best %d ==> Epoch [%d][Top1: %.3f   Top5: %.3f]',
-                        idx + 1, score['epoch'], score['top1'], score['top5'])
+            logger.info('Scoreboard best %d ==> Epoch [%d][Top1: %.3f   Top5: %.3f]', idx + 1, score['epoch'], score['top1'], score['top5'])
 
     def is_best(self, epoch):
         return self.board[0]['epoch'] == epoch

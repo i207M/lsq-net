@@ -82,6 +82,12 @@ quan:
     # Whether to quantize all the numbers to non-negative
     all_positive: false
   excepts:
+    conv1:
+      act:
+      weight:
+    fc:
+      act:
+      weight:
 
 #============================ Training / Evaluation ============================
 
