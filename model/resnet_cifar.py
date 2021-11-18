@@ -28,6 +28,7 @@ If you use this implementation in you work, please don't forget to mention the
 author, Yerlan Idelbayev.
 """
 from collections import OrderedDict
+from torch import Tensor
 
 import torch.nn as nn
 import torch.nn.functional as F
@@ -119,7 +120,8 @@ class ResNet(nn.Module):
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)
-        out = F.avg_pool2d(out, out.size()[3])
+        pool_kernel = out.size()[3]
+        out = F.avg_pool2d(out, pool_kernel.item() if isinstance(pool_kernel, Tensor) else pool_kernel)
         out = out.view(out.size(0), -1)
         out = self.linear(out)
         return out
